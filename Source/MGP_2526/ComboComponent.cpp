@@ -153,17 +153,25 @@ void UComboComponent::ApplyHit()
 // -----------------------------------------------------------------------
 void UComboComponent::PlayFinisherFeedback()
 {
-    // Only play camera shake if a class was assigned in Blueprint
     if (!FinisherCameraShake) return;
 
-    // Walk up to the owning player controller
-    const ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-    if (!OwnerChar) return;
+    // Delay the shake slightly so it hits at the peak of the animation
+    FTimerHandle ShakeTimer;
+    GetWorld()->GetTimerManager().SetTimer(
+        ShakeTimer,
+        [this]()
+        {
+            const ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+            if (!OwnerChar) return;
 
-    APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
-    if (!PC) return;
+            APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
+            if (!PC) return;
 
-    PC->ClientStartCameraShake(FinisherCameraShake);
+            PC->ClientStartCameraShake(FinisherCameraShake);
+        },
+        0.85f,  // delay in seconds — adjust this to taste
+        false
+    );
 }
 
 // -----------------------------------------------------------------------
