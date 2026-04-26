@@ -10,6 +10,9 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "EnemyCharacter.h"
+#include "DrawDebugHelpers.h"
+#include "Animation/AnimInstance.h"
 #include "MGP_2526.h"
 
 AMGP_2526Character::AMGP_2526Character()
@@ -45,6 +48,9 @@ AMGP_2526Character::AMGP_2526Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	
+	// Create the combo component
+	ComboComponent = CreateDefaultSubobject<UComboComponent>(TEXT("ComboComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -65,6 +71,9 @@ void AMGP_2526Character::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMGP_2526Character::Look);
+		
+		// Attacking
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AMGP_2526Character::Attack);
 	}
 	else
 	{
@@ -130,4 +139,69 @@ void AMGP_2526Character::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AMGP_2526Character::Attack()
+{
+	if (!ComboComponent) return;
+
+	// Advance the combo state and play the animation
+	// The line trace now happens via AN_ComboHit notify at the moment of impact
+	ComboComponent->AttemptAttack();
+	PlayAttackMontage(ComboComponent->GetCurrentState());
+}
+
+void AMGP_2526Character::PlayAttackMontage(EComboState State)
+{
+	UAnimMontage* MontageToPlay = nullptr;
+
+	switch (State)
+	{
+	case EComboState::Attack1:  MontageToPlay = Attack1Montage;  break;
+	case EComboState::Attack2:  MontageToPlay = Attack2Montage;  break;
+	case EComboState::Attack3:  MontageToPlay = Attack3Montage;  break;
+	case EComboState::Finisher: MontageToPlay = FinisherMontage; break;
+	default: return;
+	}
+
+	if (!MontageToPlay) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(MontageToPlay, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+	}
+}
+
+void AMGP_2526Character::OnAttackHitNotify()
+{
+	if (!ComboComponent) return;
+
+	// Line trace from character forward — only runs at the exact frame of impact
+	const FVector Start = GetActorLocation();
+	const FVector End = Start + (GetActorForwardVector() * 150.f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Pawn,
+		Params
+	);
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.5f, 0, 2.f);
+
+	if (bHit)
+	{
+		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
+		if (Enemy)
+		{
+			const float Damage = ComboComponent->GetCurrentDamage();
+			Enemy->TakeComboDamage(Damage);
+		}
+	}
 }

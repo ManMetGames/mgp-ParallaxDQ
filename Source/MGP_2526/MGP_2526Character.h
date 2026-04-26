@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "ComboComponent.h"
 #include "MGP_2526Character.generated.h"
 
 class USpringArmComponent;
@@ -48,6 +49,23 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
+	
+	/** Attack Input Action */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* AttackAction;
+
+	/** Attack montages — assign in ThirdPersonCharacter Blueprint */
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack1Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack2Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack3Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* FinisherMontage;
 
 public:
 
@@ -66,6 +84,12 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+	
+	/** Called for attack input */
+	void Attack();
+
+	/** Plays the correct montage for the current combo state */
+	void PlayAttackMontage(EComboState State);
 
 public:
 
@@ -84,8 +108,15 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+	
+	/** Called by AN_ComboHit notify at the moment of impact */
+	void OnAttackHitNotify();
 
 public:
+	
+	/** Combo attack component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UComboComponent* ComboComponent;
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
