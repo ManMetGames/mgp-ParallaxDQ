@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "ComboComponent.h"
 #include "MGP_2526Character.generated.h"
 
 class USpringArmComponent;
@@ -48,6 +49,10 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
+	
+	/** Attack Input Action */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* AttackAction;
 
 public:
 
@@ -66,6 +71,9 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+	
+	/** Called for attack input */
+	void Attack();
 
 public:
 
@@ -86,6 +94,10 @@ public:
 	virtual void DoJumpEnd();
 
 public:
+	
+	/** Combo attack component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UComboComponent* ComboComponent;
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

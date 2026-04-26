@@ -45,6 +45,9 @@ AMGP_2526Character::AMGP_2526Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	
+	// Create the combo component
+	ComboComponent = CreateDefaultSubobject<UComboComponent>(TEXT("ComboComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -65,6 +68,9 @@ void AMGP_2526Character::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMGP_2526Character::Look);
+		
+		// Attacking
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AMGP_2526Character::Attack);
 	}
 	else
 	{
@@ -130,4 +136,12 @@ void AMGP_2526Character::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AMGP_2526Character::Attack()
+{
+	if (ComboComponent)
+	{
+		ComboComponent->AttemptAttack();
+	}
 }
