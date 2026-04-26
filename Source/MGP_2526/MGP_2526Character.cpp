@@ -10,6 +10,9 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "EnemyCharacter.h"
+#include "DrawDebugHelpers.h"
+#include "Animation/AnimInstance.h"
 #include "MGP_2526.h"
 
 AMGP_2526Character::AMGP_2526Character()
@@ -140,8 +143,63 @@ void AMGP_2526Character::DoJumpEnd()
 
 void AMGP_2526Character::Attack()
 {
-	if (ComboComponent)
+	if (!ComboComponent) return;
+
+	ComboComponent->AttemptAttack();
+
+	// Play the animation for the current combo stage
+	PlayAttackMontage(ComboComponent->GetCurrentState());
+
+	// Set up the line trace — start at the character, reach 150cm forward
+	const FVector Start = GetActorLocation();
+	const FVector End = Start + (GetActorForwardVector() * 150.f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this); // don't hit ourselves
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Pawn,
+		Params
+	);
+
+	// Draw a debug line so you can see the trace in the editor
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.5f, 0, 2.f);
+
+	if (bHit)
 	{
-		ComboComponent->AttemptAttack();
+		// Check if we hit an enemy
+		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
+		if (Enemy)
+		{
+			// Get the damage for the current combo stage and apply it
+			const float Damage = ComboComponent->GetCurrentDamage();
+			Enemy->TakeComboDamage(Damage);
+		}
+	}
+}
+
+void AMGP_2526Character::PlayAttackMontage(EComboState State)
+{
+	UAnimMontage* MontageToPlay = nullptr;
+
+	switch (State)
+	{
+	case EComboState::Attack1:  MontageToPlay = Attack1Montage;  break;
+	case EComboState::Attack2:  MontageToPlay = Attack2Montage;  break;
+	case EComboState::Attack3:  MontageToPlay = Attack3Montage;  break;
+	case EComboState::Finisher: MontageToPlay = FinisherMontage; break;
+	default: return;
+	}
+
+	if (!MontageToPlay) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(MontageToPlay, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
 	}
 }

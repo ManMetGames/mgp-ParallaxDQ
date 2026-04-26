@@ -54,6 +54,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* AttackAction;
 
+	/** Attack montages — assign in ThirdPersonCharacter Blueprint */
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack1Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack2Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* Attack3Montage;
+
+	UPROPERTY(EditAnywhere, Category="Combat|Animations")
+	UAnimMontage* FinisherMontage;
+
 public:
 
 	/** Constructor */
@@ -74,6 +87,9 @@ protected:
 	
 	/** Called for attack input */
 	void Attack();
+
+	/** Plays the correct montage for the current combo state */
+	void PlayAttackMontage(EComboState State);
 
 public:
 

@@ -88,6 +88,10 @@ public:
     // Read-only access to current state (useful for animation Blueprint)
     UFUNCTION(BlueprintPure, Category = "Combo")
     EComboState GetCurrentState() const { return CurrentState; }
+    
+    // Returns the damage value for the current combo stage — used by the line trace
+    UFUNCTION(BlueprintPure, Category = "Combo")
+    float GetCurrentDamage() const { return GetDamageForState(CurrentState); }
 
 protected:
     virtual void BeginPlay() override;
