@@ -108,6 +108,9 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+	
+	/** Called by AN_ComboHit notify at the moment of impact */
+	void OnAttackHitNotify();
 
 public:
 	

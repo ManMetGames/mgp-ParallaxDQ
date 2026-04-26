@@ -145,41 +145,10 @@ void AMGP_2526Character::Attack()
 {
 	if (!ComboComponent) return;
 
+	// Advance the combo state and play the animation
+	// The line trace now happens via AN_ComboHit notify at the moment of impact
 	ComboComponent->AttemptAttack();
-
-	// Play the animation for the current combo stage
 	PlayAttackMontage(ComboComponent->GetCurrentState());
-
-	// Set up the line trace — start at the character, reach 150cm forward
-	const FVector Start = GetActorLocation();
-	const FVector End = Start + (GetActorForwardVector() * 150.f);
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this); // don't hit ourselves
-
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		Start,
-		End,
-		ECC_Pawn,
-		Params
-	);
-
-	// Draw a debug line so you can see the trace in the editor
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.5f, 0, 2.f);
-
-	if (bHit)
-	{
-		// Check if we hit an enemy
-		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
-		if (Enemy)
-		{
-			// Get the damage for the current combo stage and apply it
-			const float Damage = ComboComponent->GetCurrentDamage();
-			Enemy->TakeComboDamage(Damage);
-		}
-	}
 }
 
 void AMGP_2526Character::PlayAttackMontage(EComboState State)
@@ -201,5 +170,38 @@ void AMGP_2526Character::PlayAttackMontage(EComboState State)
 	if (AnimInstance)
 	{
 		AnimInstance->Montage_Play(MontageToPlay, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+	}
+}
+
+void AMGP_2526Character::OnAttackHitNotify()
+{
+	if (!ComboComponent) return;
+
+	// Line trace from character forward — only runs at the exact frame of impact
+	const FVector Start = GetActorLocation();
+	const FVector End = Start + (GetActorForwardVector() * 150.f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Pawn,
+		Params
+	);
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.5f, 0, 2.f);
+
+	if (bHit)
+	{
+		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
+		if (Enemy)
+		{
+			const float Damage = ComboComponent->GetCurrentDamage();
+			Enemy->TakeComboDamage(Damage);
+		}
 	}
 }
