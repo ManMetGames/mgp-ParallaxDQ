@@ -69,9 +69,6 @@ void UComboComponent::SetState(EComboState NewState)
         case EComboState::Attack2:
         case EComboState::Attack3:
         {
-            // Apply the hit immediately, then open a window for the next press
-            ApplyHit();
-
             GetWorld()->GetTimerManager().SetTimer(
                 ComboWindowTimer,
                 this,
@@ -84,8 +81,6 @@ void UComboComponent::SetState(EComboState NewState)
 
         case EComboState::Finisher:
         {
-            // Finisher hits hard then goes into cooldown — no input window
-            ApplyHit();
             PlayFinisherFeedback();
 
             GetWorld()->GetTimerManager().SetTimer(

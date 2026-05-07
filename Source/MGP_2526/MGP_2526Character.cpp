@@ -13,6 +13,7 @@
 #include "EnemyCharacter.h"
 #include "DrawDebugHelpers.h"
 #include "Animation/AnimInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "MGP_2526.h"
 
 AMGP_2526Character::AMGP_2526Character()
@@ -202,6 +203,21 @@ void AMGP_2526Character::OnAttackHitNotify()
 		{
 			const float Damage = ComboComponent->GetCurrentDamage();
 			Enemy->TakeComboDamage(Damage);
+
+			// Hit stop — freeze the game briefly to sell the impact
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.05f);
+
+			// Restore normal speed after a short delay
+			FTimerHandle HitStopTimer;
+			GetWorld()->GetTimerManager().SetTimer(
+				HitStopTimer,
+				[this]()
+				{
+					UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+				},
+				0.01f,  // real time seconds — tweak this to taste
+				false
+			);
 		}
 	}
 }
