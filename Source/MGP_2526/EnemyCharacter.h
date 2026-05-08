@@ -4,6 +4,11 @@
 #include "GameFramework/Character.h"
 #include "EnemyCharacter.generated.h"
 
+/**
+ * A basic enemy character that receives damage from the player's combo system.
+ * Plays hit reaction and death montages, and broadcasts health changes to Blueprint
+ * for UI updates via the OnHealthChanged event.
+ */
 UCLASS()
 class MGP_2526_API AEnemyCharacter : public ACharacter
 {

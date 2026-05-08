@@ -136,20 +136,6 @@ void UComboComponent::OnCooldownFinished()
 }
 
 // -----------------------------------------------------------------------
-// PRIVATE: Broadcast the hit with the correct damage for this stage
-// -----------------------------------------------------------------------
-void UComboComponent::ApplyHit()
-{
-    const float Damage = GetDamageForState(CurrentState);
-    UE_LOG(LogTemp, Log, TEXT("ComboComponent: Hit at state %d for %.1f damage."),
-        (int32)CurrentState, Damage);
-
-    // Broadcast — the character or ability system receives this and applies
-    // damage to whatever the player is attacking
-    OnComboHit.Broadcast(CurrentState, Damage);
-}
-
-// -----------------------------------------------------------------------
 // PRIVATE: Camera shake + any other finisher feedback
 // -----------------------------------------------------------------------
 void UComboComponent::PlayFinisherFeedback()

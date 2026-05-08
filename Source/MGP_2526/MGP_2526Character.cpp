@@ -11,7 +11,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "EnemyCharacter.h"
-#include "DrawDebugHelpers.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "MGP_2526.h"
@@ -177,6 +176,9 @@ void AMGP_2526Character::PlayAttackMontage(EComboState State)
 void AMGP_2526Character::OnAttackHitNotify()
 {
 	if (!ComboComponent) return;
+	
+	// Notify the combo component a hit landed so the UI counter updates
+	ComboComponent->OnComboHit.Broadcast(ComboComponent->GetCurrentState(), ComboComponent->GetCurrentDamage());
 
 	// Line trace from character forward — only runs at the exact frame of impact
 	const FVector Start = GetActorLocation();
@@ -194,8 +196,6 @@ void AMGP_2526Character::OnAttackHitNotify()
 		Params
 	);
 
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.5f, 0, 2.f);
-
 	if (bHit)
 	{
 		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
@@ -204,7 +204,7 @@ void AMGP_2526Character::OnAttackHitNotify()
 			const float Damage = ComboComponent->GetCurrentDamage();
 			Enemy->TakeComboDamage(Damage);
 
-			// Hit stop — freeze the game briefly to sell the impact
+			// Hit stop — briefly freezes time dilation to sell the impact
 			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.05f);
 
 			// Restore normal speed after a short delay
@@ -213,6 +213,7 @@ void AMGP_2526Character::OnAttackHitNotify()
 				HitStopTimer,
 				[this]()
 				{
+					// SetGlobalTimeDilation is restored after a short real-time delay
 					UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
 				},
 				0.01f,  // real time seconds — tweak this to taste
