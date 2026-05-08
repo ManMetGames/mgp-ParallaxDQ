@@ -144,9 +144,11 @@ void AMGP_2526Character::DoJumpEnd()
 void AMGP_2526Character::Attack()
 {
 	if (!ComboComponent) return;
+	
+	// Prevent attacking while airborne
+	if (!GetCharacterMovement()->IsMovingOnGround()) return;
 
 	// Advance the combo state and play the animation
-	// The line trace now happens via AN_ComboHit notify at the moment of impact
 	ComboComponent->AttemptAttack();
 	PlayAttackMontage(ComboComponent->GetCurrentState());
 }
@@ -180,19 +182,22 @@ void AMGP_2526Character::OnAttackHitNotify()
 	// Notify the combo component a hit landed so the UI counter updates
 	ComboComponent->OnComboHit.Broadcast(ComboComponent->GetCurrentState(), ComboComponent->GetCurrentDamage());
 
-	// Line trace from character forward — only runs at the exact frame of impact
+	// Sphere sweep — wider hit detection than a single line trace
 	const FVector Start = GetActorLocation();
 	const FVector End = Start + (GetActorForwardVector() * 150.f);
+	const float SweepRadius = 40.f; // adjust this to taste
 
 	FHitResult HitResult;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+	const bool bHit = GetWorld()->SweepSingleByChannel(
 		HitResult,
 		Start,
 		End,
+		FQuat::Identity,
 		ECC_Pawn,
+		FCollisionShape::MakeSphere(SweepRadius),
 		Params
 	);
 
