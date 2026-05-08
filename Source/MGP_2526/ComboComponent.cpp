@@ -54,6 +54,12 @@ void UComboComponent::SetState(EComboState NewState)
 {
     const EComboState OldState = CurrentState;
     CurrentState = NewState;
+    
+    // Cache the damage for this state immediately before any timers fire
+    if (NewState != EComboState::Idle && NewState != EComboState::Cooldown)
+    {
+        CurrentAttackDamage = GetDamageForState(NewState);
+    }
 
     // Cancel any running timers — each new state sets its own
     GetWorld()->GetTimerManager().ClearTimer(ComboWindowTimer);

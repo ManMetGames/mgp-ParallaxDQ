@@ -91,7 +91,7 @@ public:
     
     // Returns the damage value for the current combo stage — used by the line trace
     UFUNCTION(BlueprintPure, Category = "Combo")
-    float GetCurrentDamage() const { return GetDamageForState(CurrentState); }
+    float GetCurrentDamage() const { return CurrentAttackDamage; }
 
 protected:
     virtual void BeginPlay() override;
@@ -102,6 +102,9 @@ private:
     // -----------------------------------------------------------------------
 
     EComboState CurrentState = EComboState::Idle;
+    
+    // Cached damage for the current attack — set when state changes
+    float CurrentAttackDamage = 0.f;
 
     // Handle for the combo window timer — stored so we can clear it on reset
     FTimerHandle ComboWindowTimer;
