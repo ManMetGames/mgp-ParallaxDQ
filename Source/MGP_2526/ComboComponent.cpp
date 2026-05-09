@@ -6,7 +6,7 @@
 
 UComboComponent::UComboComponent()
 {
-    // We don't need Tick — everything is timer-driven
+    // Everything is timer-driven
     PrimaryComponentTick.bCanEverTick = false;
 }
 
@@ -17,7 +17,7 @@ void UComboComponent::BeginPlay()
 }
 
 // -----------------------------------------------------------------------
-// PUBLIC: Called by the character every time the player presses attack
+// PUBLIC: Called by the character every time the player attacks
 // -----------------------------------------------------------------------
 void UComboComponent::AttemptAttack()
 {
@@ -39,7 +39,7 @@ void UComboComponent::AttemptAttack()
             SetState(EComboState::Finisher);
             break;
 
-        // Cannot attack during finisher or cooldown — input is ignored
+        // Can't attack during finisher or cooldown — input is ignored
         case EComboState::Finisher:
         case EComboState::Cooldown:
         default:
@@ -48,14 +48,14 @@ void UComboComponent::AttemptAttack()
 }
 
 // -----------------------------------------------------------------------
-// PRIVATE: The single place all state changes happen
+// PRIVATE: State changes
 // -----------------------------------------------------------------------
 void UComboComponent::SetState(EComboState NewState)
 {
     const EComboState OldState = CurrentState;
     CurrentState = NewState;
     
-    // Cache the damage for this state immediately before any timers fire
+    // Cache the damage for this state immediately before timers fire
     if (NewState != EComboState::Idle && NewState != EComboState::Cooldown)
     {
         CurrentAttackDamage = GetDamageForState(NewState);
@@ -65,7 +65,7 @@ void UComboComponent::SetState(EComboState NewState)
     GetWorld()->GetTimerManager().ClearTimer(ComboWindowTimer);
     GetWorld()->GetTimerManager().ClearTimer(CooldownTimer);
 
-    // Broadcast the state change — animation Blueprint and UI listen here
+    // Broadcast the state change
     OnComboStateChanged.Broadcast(OldState, NewState);
 
     // Handle each state's entry behaviour
@@ -113,7 +113,7 @@ void UComboComponent::SetState(EComboState NewState)
 
         case EComboState::Idle:
         default:
-            // Nothing to set up — just wait for input
+            // Nothing to set up — wait for input
             break;
     }
 }
@@ -142,7 +142,7 @@ void UComboComponent::PlayFinisherFeedback()
 {
     if (!FinisherCameraShake) return;
 
-    // Delay the shake slightly so it hits at the peak of the animation
+    // Delay the shake slightly so it hits at the point of impact
     FTimerHandle ShakeTimer;
     GetWorld()->GetTimerManager().SetTimer(
         ShakeTimer,
@@ -156,7 +156,7 @@ void UComboComponent::PlayFinisherFeedback()
 
             PC->ClientStartCameraShake(FinisherCameraShake);
         },
-        0.85f,  // delay in seconds — adjust this to taste
+        0.85f,  // delay in seconds — adjust to change duration
         false
     );
 }
@@ -166,7 +166,7 @@ void UComboComponent::PlayFinisherFeedback()
 // -----------------------------------------------------------------------
 float UComboComponent::GetDamageForState(EComboState State) const
 {
-    // Index matches the order: Attack1=0, Attack2=1, Attack3=2, Finisher=3
+    // Index matches the order: Attack1=0, Attack2=1, etc
     const int32 Index = static_cast<int32>(State) - 1;  // Idle=0, so subtract 1
 
     if (HitDamages.IsValidIndex(Index))
@@ -174,7 +174,7 @@ float UComboComponent::GetDamageForState(EComboState State) const
         return HitDamages[Index];
     }
 
-    // Safety fallback — shouldn't happen if HitDamages has 4 entries
+    // Safety fallback
     UE_LOG(LogTemp, Warning, TEXT("ComboComponent: No damage configured for state %d"), (int32)State);
     return 0.f;
 }

@@ -11,6 +11,6 @@ void UAN_ComboHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* A
 	AMGP_2526Character* Character = Cast<AMGP_2526Character>(MeshComp->GetOwner());
 	if (!Character) return;
 
-	// Tell the character to do the hit check now
+	// Do the hit check now
 	Character->OnAttackHitNotify();
 }

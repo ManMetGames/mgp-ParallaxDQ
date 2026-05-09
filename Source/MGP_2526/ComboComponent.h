@@ -19,8 +19,8 @@ enum class EComboState : uint8
 };
 
 // -----------------------------------------------------------------------
-// Delegate: Broadcasts whenever the combo state changes.
-// Other systems (UI, animation, sound) can listen without coupling to this class.
+// Broadcasts whenever the combo state changes.
+// Other systems can listen without coupling to this class
 // -----------------------------------------------------------------------
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FOnComboStateChanged,
@@ -29,8 +29,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 );
 
 // -----------------------------------------------------------------------
-// Delegate: Broadcasts when a hit should be applied.
-// The character or an ability system reads Damage and applies it to a target.
+// Broadcasts when a hit should be applied.
+// The character or an ability system reads Damage and applies it to a target
 // -----------------------------------------------------------------------
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FOnComboHit,
