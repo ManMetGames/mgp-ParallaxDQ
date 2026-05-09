@@ -10,6 +10,9 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "EnemyCharacter.h"
+#include "Animation/AnimInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "MGP_2526.h"
 
 AMGP_2526Character::AMGP_2526Character()
@@ -45,6 +48,9 @@ AMGP_2526Character::AMGP_2526Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	
+	// Create the combo component
+	ComboComponent = CreateDefaultSubobject<UComboComponent>(TEXT("ComboComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -65,6 +71,9 @@ void AMGP_2526Character::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMGP_2526Character::Look);
+		
+		// Attacking
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AMGP_2526Character::Attack);
 	}
 	else
 	{
@@ -130,4 +139,91 @@ void AMGP_2526Character::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AMGP_2526Character::Attack()
+{
+	if (!ComboComponent) return;
+	
+	// Prevent attacking while airborne
+	if (!GetCharacterMovement()->IsMovingOnGround()) return;
+
+	// Advance the combo state and play the animation
+	ComboComponent->AttemptAttack();
+	PlayAttackMontage(ComboComponent->GetCurrentState());
+}
+
+void AMGP_2526Character::PlayAttackMontage(EComboState State)
+{
+	UAnimMontage* MontageToPlay = nullptr;
+
+	switch (State)
+	{
+	case EComboState::Attack1:  MontageToPlay = Attack1Montage;  break;
+	case EComboState::Attack2:  MontageToPlay = Attack2Montage;  break;
+	case EComboState::Attack3:  MontageToPlay = Attack3Montage;  break;
+	case EComboState::Finisher: MontageToPlay = FinisherMontage; break;
+	default: return;
+	}
+
+	if (!MontageToPlay) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(MontageToPlay, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+	}
+}
+
+void AMGP_2526Character::OnAttackHitNotify()
+{
+	if (!ComboComponent) return;
+	
+	// Notify the combo component a hit landed so the UI counter updates
+	ComboComponent->OnComboHit.Broadcast(ComboComponent->GetCurrentState(), ComboComponent->GetCurrentDamage());
+
+	// Sphere sweep — wider hit detection than a single line trace
+	const FVector Start = GetActorLocation();
+	const FVector End = Start + (GetActorForwardVector() * 150.f);
+	const float SweepRadius = 40.f; // adjust this to taste
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	const bool bHit = GetWorld()->SweepSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere(SweepRadius),
+		Params
+	);
+
+	if (bHit)
+	{
+		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(HitResult.GetActor());
+		if (Enemy)
+		{
+			const float Damage = ComboComponent->GetCurrentDamage();
+			Enemy->TakeComboDamage(Damage);
+
+			// Hit stop — briefly freezes time dilation to sell the impact
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.05f);
+
+			// Restore normal speed after a short delay
+			FTimerHandle HitStopTimer;
+			GetWorld()->GetTimerManager().SetTimer(
+				HitStopTimer,
+				[this]()
+				{
+					// SetGlobalTimeDilation is restored after a short real-time delay
+					UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+				},
+				0.01f,  // real time seconds — tweak this to taste
+				false
+			);
+		}
+	}
 }
